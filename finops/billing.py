@@ -134,7 +134,7 @@ def generate_synthetic_billing(start: dt.date | None = None, end: dt.date | None
     rng = np.random.default_rng(seed)
     days = pd.date_range(start, end, freq="D")
     months_before_end = np.asarray((pd.Timestamp(end) - days).days) / A.DAYS_PER_MONTH
-    weekend = np.asarray(days.dayofweek >= 5)
+    weekend = np.asarray(days.day_of_week >= 5)
 
     frames = []
     for dept, cfg in DEPARTMENTS.items():
