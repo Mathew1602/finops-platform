@@ -1,0 +1,119 @@
+# Reference price catalog (fallback when the Floci Pricing API has no SKU).
+#
+# Values approximate AWS public On-Demand list prices for us-east-1 and were
+# entered by hand as DOCUMENTED ASSUMPTIONS. They are not retrieved from an API.
+# Any row the app shows from this file has source = "reference_assumption".
+# EC2 instance prices come from data/reference/ec2_instances.csv instead.
+#
+# Schema: service -> product -> variant -> {unit, price, description}
+
+AmazonS3:
+  STANDARD:
+    storage: {unit: GB-Mo, price: 0.023, description: "S3 Standard storage, first 50 TB"}
+    retrieval: {unit: GB, price: 0.0, description: "No retrieval fee"}
+  STANDARD_IA:
+    storage: {unit: GB-Mo, price: 0.0125, description: "S3 Standard-IA storage (30-day minimum)"}
+    retrieval: {unit: GB, price: 0.01, description: "Standard-IA retrieval"}
+  INTELLIGENT_TIERING:
+    storage: {unit: GB-Mo, price: 0.023, description: "Intelligent-Tiering frequent tier (+ monitoring fee excluded)"}
+    retrieval: {unit: GB, price: 0.0, description: "No retrieval fee"}
+  GLACIER_IR:
+    storage: {unit: GB-Mo, price: 0.004, description: "Glacier Instant Retrieval (90-day minimum)"}
+    retrieval: {unit: GB, price: 0.03, description: "Glacier IR retrieval"}
+  GLACIER:
+    storage: {unit: GB-Mo, price: 0.0036, description: "Glacier Flexible Retrieval (90-day minimum)"}
+    retrieval: {unit: GB, price: 0.01, description: "Standard retrieval, 3-5 h"}
+  DEEP_ARCHIVE:
+    storage: {unit: GB-Mo, price: 0.00099, description: "Glacier Deep Archive (180-day minimum)"}
+    retrieval: {unit: GB, price: 0.02, description: "Standard retrieval, up to 12 h"}
+  REQUESTS:
+    put: {unit: "1K requests", price: 0.005, description: "PUT/COPY/POST/LIST per 1,000"}
+    get: {unit: "1K requests", price: 0.0004, description: "GET/SELECT per 1,000"}
+
+AmazonEBS:
+  gp3: {storage: {unit: GB-Mo, price: 0.08, description: "General Purpose SSD gp3"}}
+  gp2: {storage: {unit: GB-Mo, price: 0.10, description: "General Purpose SSD gp2"}}
+  io1: {storage: {unit: GB-Mo, price: 0.125, description: "Provisioned IOPS SSD io1 (IOPS excluded)"}}
+  st1: {storage: {unit: GB-Mo, price: 0.045, description: "Throughput Optimized HDD"}}
+  sc1: {storage: {unit: GB-Mo, price: 0.015, description: "Cold HDD"}}
+
+AmazonEFS:
+  STANDARD: {storage: {unit: GB-Mo, price: 0.30, description: "EFS Standard storage"}}
+  IA: {storage: {unit: GB-Mo, price: 0.016, description: "EFS Infrequent Access storage"}}
+
+AWSLambda:
+  requests: {default: {unit: Requests, price: 0.0000002, description: "$0.20 per 1M requests"}}
+  compute: {default: {unit: GB-Second, price: 0.0000166667, description: "x86 duration per GB-second"}}
+
+AmazonDynamoDB:
+  on_demand:
+    read: {unit: "1M RRU", price: 0.125, description: "On-demand read request units per million"}
+    write: {unit: "1M WRU", price: 0.625, description: "On-demand write request units per million"}
+  storage: {default: {unit: GB-Mo, price: 0.25, description: "Standard table storage"}}
+
+AmazonRDS:
+  db.t3.micro: {MySQL: {unit: Hrs, price: 0.017, description: "db.t3.micro Single-AZ MySQL"}}
+  db.t3.small: {MySQL: {unit: Hrs, price: 0.034, description: "db.t3.small Single-AZ MySQL"}}
+  db.t3.medium: {MySQL: {unit: Hrs, price: 0.068, description: "db.t3.medium Single-AZ MySQL"}}
+  db.t3.large: {MySQL: {unit: Hrs, price: 0.136, description: "db.t3.large Single-AZ MySQL"}}
+  db.m5.large: {MySQL: {unit: Hrs, price: 0.171, description: "db.m5.large Single-AZ MySQL"}}
+  db.m5.xlarge: {MySQL: {unit: Hrs, price: 0.342, description: "db.m5.xlarge Single-AZ MySQL"}}
+  db.r5.large: {MySQL: {unit: Hrs, price: 0.25, description: "db.r5.large Single-AZ MySQL"}}
+  db.r5.xlarge: {MySQL: {unit: Hrs, price: 0.50, description: "db.r5.xlarge Single-AZ MySQL"}}
+  storage: {gp2: {unit: GB-Mo, price: 0.115, description: "RDS General Purpose storage, Single-AZ"}}
+
+AmazonElastiCache:
+  cache.t3.micro: {Redis: {unit: Hrs, price: 0.017, description: "cache.t3.micro node"}}
+  cache.t3.medium: {Redis: {unit: Hrs, price: 0.068, description: "cache.t3.medium node"}}
+  cache.m5.large: {Redis: {unit: Hrs, price: 0.156, description: "cache.m5.large node"}}
+  cache.r5.large: {Redis: {unit: Hrs, price: 0.216, description: "cache.r5.large node"}}
+
+AWSELB:
+  application:
+    hours: {unit: Hrs, price: 0.0225, description: "Application Load Balancer hour"}
+    lcu: {unit: LCU-Hrs, price: 0.008, description: "ALB Load Balancer Capacity Unit hour"}
+  network:
+    hours: {unit: Hrs, price: 0.0225, description: "Network Load Balancer hour"}
+    lcu: {unit: NLCU-Hrs, price: 0.006, description: "NLB capacity unit hour"}
+
+AmazonCloudFront:
+  data_transfer: {default: {unit: GB, price: 0.085, description: "Data transfer out, first 10 TB (North America)"}}
+  requests: {https: {unit: "10K requests", price: 0.01, description: "HTTPS requests per 10,000"}}
+
+AmazonRoute53:
+  hosted_zone: {default: {unit: Zone-Mo, price: 0.50, description: "Hosted zone, first 25"}}
+  queries: {standard: {unit: "1M queries", price: 0.40, description: "Standard queries per million"}}
+
+AmazonSQS:
+  requests: {standard: {unit: "1M requests", price: 0.40, description: "Standard queue requests per million"}}
+
+AmazonSNS:
+  publishes: {default: {unit: "1M publishes", price: 0.50, description: "Publishes per million"}}
+
+AmazonECS:
+  fargate_vcpu: {default: {unit: vCPU-Hrs, price: 0.04048, description: "Fargate vCPU hour (Linux/x86)"}}
+  fargate_memory: {default: {unit: GB-Hrs, price: 0.004445, description: "Fargate memory GB hour"}}
+
+AmazonEKS:
+  cluster: {default: {unit: Hrs, price: 0.10, description: "EKS cluster hour (standard support)"}}
+
+AmazonAthena:
+  queries: {default: {unit: TB scanned, price: 5.00, description: "Data scanned per TB"}}
+
+AWSGlue:
+  etl: {default: {unit: DPU-Hrs, price: 0.44, description: "ETL job DPU hour"}}
+
+AWSBackup:
+  warm_storage:
+    EBS: {unit: GB-Mo, price: 0.05, description: "EBS snapshot backup storage"}
+    S3: {unit: GB-Mo, price: 0.05, description: "S3 backup storage"}
+    RDS: {unit: GB-Mo, price: 0.095, description: "RDS snapshot backup storage"}
+    DynamoDB: {unit: GB-Mo, price: 0.10, description: "DynamoDB backup storage"}
+  cold_storage:
+    EBS: {unit: GB-Mo, price: 0.0125, description: "EBS backup cold tier (90-day minimum)"}
+
+AmazonCloudWatch:
+  metrics: {custom: {unit: Metric-Mo, price: 0.30, description: "Custom metric, first 10K"}}
+  logs:
+    ingestion: {unit: GB, price: 0.50, description: "Log ingestion"}
+    storage: {unit: GB-Mo, price: 0.03, description: "Log archive storage"}
