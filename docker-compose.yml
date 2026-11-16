@@ -1,0 +1,15 @@
+services:
+  floci:
+    image: floci/floci:latest-compat
+    container_name: finops-floci
+    restart: unless-stopped
+    ports:
+      - "4566:4566"
+    environment:
+      FLOCI_STORAGE_MODE: persistent
+      FLOCI_STORAGE_PERSISTENT_PATH: /app/data
+      FLOCI_STORAGE_PRUNE_VOLUMES_ON_DELETE: "false"
+    volumes:
+      - ./floci-data:/app/data
+      # Required for Floci services that manage Docker containers
+      - /var/run/docker.sock:/var/run/docker.sock
