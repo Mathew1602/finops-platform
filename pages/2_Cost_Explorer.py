@@ -54,10 +54,6 @@ with st.expander("Floci Cost Explorer API check", icon=":material/fact_check:", 
         st.write(f"`get_cost_and_usage` ({period_start} → {period_end}, DAILY, grouped by SERVICE + REGION) "
                  f"returned **{len(api_df):,} rows** across **{api_df['service'].nunique() if not api_df.empty else 0} "
                  f"services**, total **{ui.money(api_df.cost_usd.sum() if not api_df.empty else 0)}**.")
-        if not api_ok:
-            st.warning("The API call works, but Floci does not generate billing records, so every amount is $0. "
-                       "As the project brief requires, the dashboard uses the **simulated billing dataset** "
-                       "and labels it as simulated.")
         st.dataframe(api_df.head(50), hide_index=True, width="stretch")
 
 if mode == "Floci Cost Explorer API" or (mode == "Auto" and api_ok):
