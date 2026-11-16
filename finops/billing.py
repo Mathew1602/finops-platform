@@ -170,11 +170,23 @@ def generate_synthetic_billing(start: dt.date | None = None, end: dt.date | None
     return df
 
 
-def load_synthetic_billing(regenerate: bool = False) -> pd.DataFrame:
-    """Load the saved synthetic dataset (generate + save it on first use)."""
+def load_synthetic_billing(regenerate: bool = False, extend_to_today: bool = False) -> pd.DataFrame:
+    """Load the saved synthetic dataset (generate + save it on first use).
+
+    Regenerating keeps the saved file's date range, so the result is identical
+    whatever day it runs. `extend_to_today` moves the range to the 12 months
+    ending yesterday instead, which changes the figures.
+    """
     path = A.SYNTHETIC_BILLING_CSV
     if regenerate or not path.exists():
-        df = generate_synthetic_billing()
+        start = end = None
+        if path.exists() and not extend_to_today:
+            try:
+                dates = pd.read_csv(path, usecols=["date"], parse_dates=["date"])["date"]
+                start, end = dates.min().date(), dates.max().date()
+            except (ValueError, pd.errors.ParserError, pd.errors.EmptyDataError):
+                start = end = None      # unreadable file: fall back to the default period
+        df = generate_synthetic_billing(start, end)
         path.parent.mkdir(parents=True, exist_ok=True)
         df.to_csv(path, index=False)
     return pd.read_csv(path, parse_dates=["date"], dtype={"account_id": str})

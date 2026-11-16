@@ -40,8 +40,10 @@ with st.sidebar:
     st.subheader("Data source")
     mode = st.radio("Cost data", ["Auto", "Floci Cost Explorer API", "Simulated billing dataset"],
                     help="Auto uses the API when it returns non-zero costs, otherwise the simulated dataset.")
+    extend = st.checkbox("Extend to yesterday", help="Off: rebuild the same dataset over the same dates "
+                         "(reproducible). On: move it to the 12 months ending yesterday, which changes the figures.")
     if st.button("Regenerate simulated dataset", icon=":material/restart_alt:"):
-        B.load_synthetic_billing(regenerate=True)
+        B.load_synthetic_billing(regenerate=True, extend_to_today=extend)
         st.cache_data.clear()
         st.rerun()
 
@@ -101,7 +103,8 @@ if "last_month" in ins:
     lm, lv = ins["last_month"]
     pm, pv = ins["prev_month"]
     k2.metric(f"Last full month ({lm:%b %Y})", ui.money(lv, 0),
-              f"{ins['mom_pct']:+.1f}% vs {pm:%b}", delta_color="inverse")
+              f"{ins['mom_pct']:+.1f}% vs {pm:%b}" if ins["mom_pct"] is not None else None,
+              delta_color="inverse")
 else:
     k2.metric("Last full month", "n/a")
 days = max((pd.Timestamp(end) - pd.Timestamp(start)).days + 1, 1)
@@ -125,7 +128,7 @@ with st.container(border=True):
     if "trend_per_month" in ins:
         t = ins["trend_per_month"]
         lines.append(f"**Is expenditure increasing?** {'Yes' if t > 0 else 'No'}: the linear trend across full "
-                     f"months is {ui.money(t, 0)}/month ({'+' if t > 0 else ''}{t * 12:,.0f}/year).")
+                     f"months is {t:+,.0f} USD/month ({t * 12:+,.0f} USD/year).")
     if "increase_drivers" in ins and not ins["increase_drivers"].empty:
         drv = ", ".join(f"{r.service} (+{ui.money(r.change_usd, 0)})" for r in ins["increase_drivers"].itertuples())
         lines.append(f"**Largest contributors to the last month-over-month increase:** {drv}.")
@@ -157,7 +160,8 @@ fig = px.line(d, x="date", y=["cost_usd", "7d_avg"], labels={"value": "Cost (USD
 st.plotly_chart(fig, width="stretch")
 
 st.subheader("Top expensive services")
-n = st.slider("Show top N", 3, max(3, len(svc)), min(5, len(svc)))
+# st.slider needs min < max, so only offer it when there are more than 3 services.
+n = st.slider("Show top N", 3, len(svc), min(5, len(svc))) if len(svc) > 3 else len(svc)
 top = svc.head(n)
 st.plotly_chart(px.bar(top.iloc[::-1], x="cost_usd", y="service", orientation="h", text_auto=".3s",
                        labels={"cost_usd": "Cost (USD)", "service": ""}), width="stretch")

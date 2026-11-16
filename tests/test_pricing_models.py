@@ -31,3 +31,13 @@ def test_storage_tiers(ref_catalog):
     # Heavy retrieval makes Standard-IA more expensive than Standard.
     heavy = M.compare_storage(ref_catalog, gb=1000, retrieval_pct=150, region="us-east-1").set_index("storage_class")
     assert heavy.loc["STANDARD_IA", "monthly_usd"] > heavy.loc["STANDARD", "monthly_usd"]
+
+
+def test_commitments_are_billed_for_whole_terms(tiny_catalog):
+    df = M.compare(M.ec2_models(tiny_catalog, "x.test", "Linux", "us-east-1"), count=1, months=6)
+    df = df.set_index("model")
+    assert df.loc["On-Demand", "period_usd"] == pytest.approx(6 * 0.05 * 730)
+    assert df.loc["Reserved 1yr (No Upfront)", "paid_months"] == 12
+    assert df.loc["Reserved 1yr (No Upfront)", "period_usd"] == pytest.approx(12 * 0.035 * 730)
+    assert df.loc["Reserved 3yr (All Upfront)", "paid_months"] == 36
+    assert df.loc["Reserved 1yr (No Upfront)", "period_savings_usd"] < 0    # 6-month need: RI loses

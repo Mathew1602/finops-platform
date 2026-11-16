@@ -48,7 +48,8 @@ k2.metric("Estimated annual cost", ui.money(t["annual"], 0))
 k3.metric("Daily", ui.money(t["daily"]))
 k4.metric("Hourly (average)", ui.money(t["hourly"], 4))
 
-api_share = lines.loc[lines.price_source == "floci_api", "monthly_usd"].sum() / t["monthly"] * 100
+api_cost = lines.loc[lines.price_source == "floci_api", "monthly_usd"].sum()
+api_share = 100 * api_cost / t["monthly"] if t["monthly"] else 0.0
 st.caption(f"Region **{scn['region']}** · On-Demand pricing · {api_share:.0f}% of the estimate uses prices "
            "retrieved from the Floci Pricing API; the rest uses documented reference prices.")
 

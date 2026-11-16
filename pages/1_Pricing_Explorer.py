@@ -59,6 +59,11 @@ with tab_api:
 
         flat = st.session_state.get("api_flat")
         if flat is not None and st.session_state.get("api_query", (None,))[0] == code:
+            used = st.session_state["api_query"][1]
+            if used != filters:
+                st.info("The filters changed after these prices were retrieved. Showing results for: "
+                        + (", ".join(f"{k} = {v}" for k, v in used.items()) or "no filters")
+                        + ". Click **Retrieve prices** to update.", icon=":material/sync_problem:")
             if flat.empty:
                 st.warning("Floci returned **no price items** for these filters. Floci only seeds a "
                            "small set of SKUs; use the *Service price catalog* tab for reference prices.")
@@ -103,9 +108,9 @@ with tab_cat:
             fam = f1.multiselect("Family", fams, default=[f for f in ["t3", "m5", "c5", "r5"] if f in fams])
             os_ = f2.selectbox("Operating system", sorted(df.variant.unique()))
             terms = f3.multiselect("Pricing term", sorted(df.term.unique()), default=[P.TERM_OD])
-            max_vcpu = f4.slider("Max vCPUs", 1, 192, 16)
+            max_vcpu = f4.slider("Max vCPUs", 1, int(df.vcpus.max()), 16)
             df = df[(df.family.isin(fam) if fam else True) & (df.variant == os_) &
-                    (df.term.isin(terms)) & (df.vcpus <= max_vcpu)]
+                    (df.term.isin(terms)) & (df.vcpus <= max_vcpu)].copy()
             df["monthly_usd"] = df.price_usd * A.HOURS_PER_MONTH
         ui.source_badges(df)
         st.dataframe(df, hide_index=True, width="stretch",
@@ -143,6 +148,18 @@ with tab_cache:
         st.info("Nothing saved yet. Use *Save to local price cache* on the other tabs.")
     else:
         st.dataframe(cache, hide_index=True, width="stretch")
+        chosen = st.selectbox("Open a saved file", cache.file)
+        saved = P.load_cache(chosen)
+        ui.source_badges(saved)
+        st.dataframe(saved, hide_index=True, width="stretch")
+        c1, c2 = st.columns(2)
+        with c1:
+            ui.download_csv(saved, chosen, key="dl_saved")
+        if c2.button("Delete this file", icon=":material/delete:"):
+            P.delete_cache(chosen)
+            st.rerun()
+    st.caption("Saved files are snapshots for later analysis. The Cost Estimator and Pricing Comparison "
+               "always use the live merged catalog below, not these files.")
     st.markdown("**Full merged catalog used by the Cost Estimator**")
     st.dataframe(catalog.source.value_counts().rename_axis("source").reset_index(name="price rows"),
                  hide_index=True)

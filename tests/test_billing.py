@@ -32,3 +32,13 @@ def test_ce_has_data():
     import pandas as pd
     assert not B.ce_has_data(pd.DataFrame({"cost_usd": [0.0, 0.0]}))
     assert B.ce_has_data(pd.DataFrame({"cost_usd": [0.0, 1.5]}))
+
+
+def test_regenerate_reproduces_saved_dataset(tmp_path, monkeypatch):
+    path = tmp_path / "billing.csv"
+    monkeypatch.setattr(B.A, "SYNTHETIC_BILLING_CSV", path)
+    B.generate_synthetic_billing(dt.date(2026, 1, 1), dt.date(2026, 3, 31)).to_csv(path, index=False)
+    before = path.read_bytes()
+    df = B.load_synthetic_billing(regenerate=True)
+    assert path.read_bytes() == before
+    assert df.date.max().date() == dt.date(2026, 3, 31)

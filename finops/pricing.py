@@ -15,6 +15,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 from dataclasses import dataclass
+from pathlib import Path
 
 import pandas as pd
 import yaml
@@ -183,7 +184,8 @@ def _api_rows_to_catalog(service_code: str, flat: pd.DataFrame) -> list[dict]:
             continue
         out.append({
             "service": service_code, "product": product, "variant": variant,
-            "region": r["region"] or A.BASE_REGION, "term": r["term"], "unit": r["unit"],
+            "region": r["region"] or A.BASE_REGION,
+            "term": TERM_RI_1YR if r["term"] == "Reserved-1yr-NoUpfront" else r["term"], "unit": r["unit"],
             "price_usd": r["effective_hourly"] if pd.notna(r.get("effective_hourly")) else r["price_usd"],
             "source": SRC_API, "description": r["description"],
         })
@@ -288,7 +290,7 @@ def get_price(catalog: pd.DataFrame, service: str, product: str, variant: str = 
         return None
     r = base.iloc[0]
     mult = A.REGION_PRICE_MULTIPLIER.get(region, 1.0)
-    return PriceQuote(float(r.price_usd) * mult, r.unit, SRC_DERIVED if mult != 1.0 else r.source,
+    return PriceQuote(float(r.price_usd) * mult, r.unit, SRC_DERIVED,
                       f"{r.description} (us-east-1 x {mult:.2f} {region} multiplier, base from {r.source})",
                       region)
 
@@ -315,6 +317,15 @@ def save_to_cache(df: pd.DataFrame, name: str) -> str:
     path = A.PRICING_CACHE_DIR / f"{name}_{stamp}.csv"
     df.assign(retrieved_at=dt.datetime.now().isoformat(timespec="seconds")).to_csv(path, index=False)
     return str(path)
+
+
+def load_cache(filename: str) -> pd.DataFrame:
+    """Read back a price file written by `save_to_cache`."""
+    return pd.read_csv(A.PRICING_CACHE_DIR / Path(filename).name)
+
+
+def delete_cache(filename: str) -> None:
+    (A.PRICING_CACHE_DIR / Path(filename).name).unlink(missing_ok=True)
 
 
 def list_cache() -> pd.DataFrame:

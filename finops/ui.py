@@ -38,15 +38,24 @@ def money(x: float, decimals: int = 2) -> str:
     return f"${x:,.{decimals}f}"
 
 
-@st.cache_data(ttl=300, show_spinner="Loading price catalog...")
-def get_catalog(use_api: bool = True):
-    return P.build_catalog(use_api=use_api)
-
-
 @st.cache_data(ttl=60, show_spinner=False)
 def floci_status() -> bool:
     from finops.capabilities import floci_reachable
     return floci_reachable()
+
+
+@st.cache_data(ttl=300, show_spinner="Loading price catalog...")
+def _catalog(use_api: bool):
+    return P.build_catalog(use_api=use_api)
+
+
+def get_catalog(use_api: bool = True):
+    """(catalog, api_error). Cached per Floci state, so it refreshes when Floci goes up or down."""
+    online = use_api and floci_status()
+    catalog, err = _catalog(online)
+    if use_api and not online and err is None:
+        err = "Floci endpoint unreachable"
+    return catalog, err
 
 
 def sidebar_status() -> None:

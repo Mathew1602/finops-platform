@@ -51,11 +51,21 @@ choice = c1.selectbox("Scenario", [NEW] + names,
 uploaded = c2.file_uploader("Import JSON", type="json", label_visibility="collapsed")
 
 if uploaded is not None and st.session_state.get("_imported") != uploaded.file_id:
-    scn = json.load(uploaded)
-    C.save_scenario(scn)
-    st.session_state["_imported"] = uploaded.file_id
-    st.session_state["active_scenario"] = scn["name"]
-    st.rerun()
+    try:
+        scn = json.load(uploaded)
+        if not (isinstance(scn, dict) and str(scn.get("name", "")).strip()
+                and isinstance(scn.get("resources"), dict)):
+            raise ValueError("expected a JSON object with a 'name' and a 'resources' object")
+        if scn.get("region") not in A.REGIONS:
+            scn["region"] = A.BASE_REGION
+        scn["name"] = C.unique_name(str(scn["name"]).strip())   # never overwrite an existing scenario
+        C.save_scenario(scn)
+    except (ValueError, TypeError, AttributeError) as exc:
+        st.error(f"Could not import this file: {exc}")
+    else:
+        st.session_state["_imported"] = uploaded.file_id
+        st.session_state["active_scenario"] = scn["name"]
+        st.rerun()
 
 if st.session_state.get("_loaded") != choice:
     st.session_state["work"] = C.new_scenario("") if choice == NEW else C.load_scenario(choice)
@@ -73,7 +83,7 @@ ver = st.session_state["_ver"]
 c1, c2 = st.columns([2, 1])
 work["name"] = c1.text_input("Scenario name", work["name"], placeholder="e.g. Analytics growth 2027")
 regions = list(A.REGIONS)
-work["region"] = c2.selectbox("Region", regions, index=regions.index(work.get("region", A.BASE_REGION)),
+work["region"] = c2.selectbox("Region", regions, index=regions.index(work["region"] if work.get("region") in regions else A.BASE_REGION),
                               format_func=lambda r: f"{r} ({A.REGIONS[r]})")
 work["description"] = st.text_area("Description / notes", work.get("description", ""), height=68)
 
@@ -84,8 +94,8 @@ st.caption("Add rows with the ➕ at the bottom of each table. Every resource ca
 edited = {}
 for rtype, spec in C.RESOURCE_SPECS.items():
     base = st.session_state["base_rows"].get(rtype, [])
-    current = work["resources"].get(rtype, [])
-    with st.expander(f"{spec['label']} ({len(current)})", expanded=bool(base)):
+    # Static label: a changing label would re-create the expander and collapse it mid-edit.
+    with st.expander(spec["label"], expanded=bool(base)):
         df = pd.DataFrame(base, columns=list(spec["fields"]))
         out = st.data_editor(df, num_rows="dynamic", column_config=column_config(rtype),
                              hide_index=True, width="stretch", key=f"ed_{rtype}_{ver}")
@@ -99,16 +109,22 @@ st.write("**Scenario contents:** " + (", ".join(f"{C.RESOURCE_SPECS[k]['label']}
                                       or "no resources yet"))
 b1, b2, b3, b4 = st.columns(4)
 if b1.button("Save scenario", type="primary", icon=":material/save:", width="stretch"):
+    current = None if choice == NEW else choice
     if not work["name"].strip():
         st.error("Give the scenario a name first.")
+    elif C.name_taken(work["name"], current):
+        st.error(f"Another scenario already uses the file `{C.slugify(work['name'])}.json` (names that differ "
+                 "only by case or punctuation share a file). Choose a different name.")
     else:
         path = C.save_scenario(work)
+        if current and C.slugify(current) != C.slugify(work["name"]):
+            C.delete_scenario(current)      # renamed: remove the file under the old name
         st.session_state["active_scenario"] = work["name"]
         st.session_state["_loaded"] = work["name"]
         st.toast(f"Saved to {path}", icon=":material/check:")
         st.rerun()
 if b2.button("Duplicate as new", icon=":material/content_copy:", width="stretch", disabled=choice == NEW):
-    copy = {**work, "name": f"{work['name']} (copy)"}
+    copy = {**work, "name": C.unique_name(f"{work['name'] or choice} (copy)")}
     C.save_scenario(copy)
     st.session_state["active_scenario"] = copy["name"]
     st.session_state["_loaded"] = None
@@ -131,4 +147,12 @@ for n in C.list_scenarios():
     s = C.load_scenario(n)
     rows.append({"name": n, "region": s["region"], "resources": sum(C.scenario_summary(s).values()),
                  "types": ", ".join(C.scenario_summary(s)), "updated": s.get("updated")})
-st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+if rows:
+    st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+else:
+    st.info("No saved scenarios.")
+if st.button("Restore the 3 example scenarios", icon=":material/restore:",
+             help="Rewrites Brief example, E-commerce production and Development small."):
+    C.restore_examples()
+    st.session_state["_loaded"] = None
+    st.rerun()

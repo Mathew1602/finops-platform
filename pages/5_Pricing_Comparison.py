@@ -18,7 +18,7 @@ region = st.sidebar.selectbox("Region", list(A.REGIONS), format_func=lambda r: f
 
 MONEY = {c: st.column_config.NumberColumn(c.replace("_usd", "").replace("_", " ").capitalize(), format="$%.2f")
          for c in ["monthly_usd", "annual_usd", "period_usd", "upfront_usd", "savings_month_usd",
-                   "savings_annual_usd", "storage_usd", "retrieval_usd"]}
+                   "savings_annual_usd", "period_savings_usd", "storage_usd", "retrieval_usd"]}
 MONEY.update({
     "effective_hourly": st.column_config.NumberColumn("Effective $/h", format="$%.4f"),
     "savings_pct": st.column_config.NumberColumn("Savings %", format="%.1f%%"),
@@ -44,11 +44,22 @@ def show_compute(models, count, util, months, unit_label):
               f"{best.savings_pct:.1f}% vs On-Demand", delta_color="normal" if best.savings_pct > 0 else "off")
 
     st.dataframe(df[["model", "effective_hourly", "billed_hours_month", "monthly_usd", "annual_usd",
-                     "period_usd", "upfront_usd", "savings_month_usd", "savings_annual_usd", "savings_pct",
-                     "breakeven_utilisation_pct", "source"]],
+                     "savings_month_usd", "savings_annual_usd", "savings_pct", "paid_months", "period_usd",
+                     "period_savings_usd", "upfront_usd", "breakeven_utilisation_pct", "source"]],
                  hide_index=True, width="stretch",
-                 column_config={**MONEY, "period_usd": st.column_config.NumberColumn(
-                     f"Total over {months} mo", format="$%.0f")})
+                 column_config={**MONEY,
+                                "paid_months": st.column_config.NumberColumn(
+                                    "Months billed", help="Commitments are billed for whole terms."),
+                                "period_usd": st.column_config.NumberColumn(
+                                    f"Total paid for a {months}-month need", format="$%.0f"),
+                                "period_savings_usd": st.column_config.NumberColumn(
+                                    "Saving vs On-Demand over the period", format="$%.0f")})
+    longer = df[df.paid_months > months]
+    if not longer.empty:
+        st.info(f"You need capacity for **{months} months**, but these commitments are billed for their whole "
+                "term: " + ", ".join(f"{r.model} ({r.paid_months} months)" for r in longer.itertuples())
+                + ". The monthly and annual columns show the rate while running; *Total paid* shows the full "
+                "commitment, which can exceed On-Demand for a short need.", icon=":material/event_busy:")
     c1, c2 = st.columns(2)
     with c1:
         st.plotly_chart(px.bar(df, x="model", y=["monthly_usd"], text_auto=".0f", color="model",
@@ -138,5 +149,6 @@ ui.assumptions_panel({
     "Spot": "Minimum observed spot price from ec2_instances.csv, else "
             f"{A.SPOT_DEFAULT_DISCOUNT:.0%} discount; actual spot prices fluctuate",
     "RDS Reserved 1yr": f"{A.RDS_RESERVED_1YR_DISCOUNT:.0%} discount (assumed)",
-    "Commitments": "Billed for all 730 h/month regardless of utilisation",
+    "Commitments": "Billed for all 730 h/month regardless of utilisation, and for whole 1- or 3-year terms",
+    "3yr All Upfront": "Monthly / annual figures amortise the upfront payment; the Upfront column is the cash paid",
 })

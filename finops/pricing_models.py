@@ -8,6 +8,7 @@ shows where a commitment starts to pay off.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import pandas as pd
@@ -95,7 +96,12 @@ def rds_models(catalog: pd.DataFrame, instance_class: str, multi_az: bool, regio
 
 
 def compare(models: list[Model], count: int, utilisation: float = 1.0, months: int = 12) -> pd.DataFrame:
-    """Cost of running `count` units for `months` at `utilisation` (0-1) under each model."""
+    """Cost of running `count` units for `months` at `utilisation` (0-1) under each model.
+
+    A commitment cannot be bought for part of its term, so committed models are
+    billed for whole terms: `paid_months` is `months` rounded up to a multiple of
+    the term, and `period_usd` is what is actually paid to cover the period.
+    """
     if not models:
         return pd.DataFrame()
     used_hours = A.HOURS_PER_MONTH * utilisation
@@ -103,9 +109,12 @@ def compare(models: list[Model], count: int, utilisation: float = 1.0, months: i
     for m in models:
         billed = A.HOURS_PER_MONTH if m.committed else used_hours
         monthly = m.hourly_rate * billed * count
+        term_months = m.term_years * A.MONTHS_PER_YEAR
+        paid_months = math.ceil(months / term_months) * term_months if m.committed else months
         rows.append({"model": m.name, "effective_hourly": m.hourly_rate, "billed_hours_month": billed,
                      "monthly_usd": monthly, "annual_usd": monthly * A.MONTHS_PER_YEAR,
-                     "period_usd": monthly * months, "upfront_usd": m.upfront_per_unit * count,
+                     "paid_months": paid_months, "period_usd": monthly * paid_months,
+                     "upfront_usd": m.upfront_per_unit * count,
                      "term_years": m.term_years, "committed": m.committed, "source": m.source,
                      "basis": m.basis, "conditions": m.conditions})
     df = pd.DataFrame(rows)
@@ -113,6 +122,8 @@ def compare(models: list[Model], count: int, utilisation: float = 1.0, months: i
     df["savings_month_usd"] = (od - df.monthly_usd).round(6)
     df["savings_annual_usd"] = df.savings_month_usd * A.MONTHS_PER_YEAR
     df["savings_pct"] = 100 * df.savings_month_usd / od if od else 0.0
+    od_period = df.loc[df.model == "On-Demand", "period_usd"].iloc[0]
+    df["period_savings_usd"] = (od_period - df.period_usd).round(6)
     od_rate = models[0].hourly_rate
     df["breakeven_utilisation_pct"] = [100 * m.hourly_rate / od_rate if m.committed and od_rate else None
                                        for m in models]

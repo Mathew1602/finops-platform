@@ -35,7 +35,8 @@ st.error("Spend figures on this page come from the **simulated billing dataset**
 k1, k2, k3, k4 = st.columns(4)
 if "last_month" in ins:
     lm, lv = ins["last_month"]
-    k1.metric(f"Spend {lm:%b %Y}", ui.money(lv, 0), f"{ins['mom_pct']:+.1f}% MoM", delta_color="inverse")
+    k1.metric(f"Spend {lm:%b %Y}", ui.money(lv, 0),
+              f"{ins['mom_pct']:+.1f}% MoM" if ins["mom_pct"] is not None else None, delta_color="inverse")
     k2.metric("Monthly budget", ui.money(COMPANY_BUDGET, 0), f"{100 * lv / COMPANY_BUDGET:.0f}% used",
               delta_color="off")
     k3.metric("Over / under budget", ui.money(lv - COMPANY_BUDGET, 0),

@@ -33,3 +33,20 @@ def test_flatten_amortises_reserved_upfront():
     row = flat.iloc[0]
     assert row.term == "Reserved-1yr-PartialUpfront"
     assert abs(row.effective_hourly - (0.02 + 876 / 8760)) < 1e-9
+
+
+def test_same_price_region_is_still_labelled_derived(ref_catalog):
+    # us-west-2 uses a x1.00 multiplier, but the price was not retrieved for that region.
+    q = P.get_price(ref_catalog, "AmazonEC2", "t3.small", "Linux", region="us-west-2")
+    assert q.source == P.SRC_DERIVED
+
+
+def test_api_reserved_no_upfront_maps_to_lookup_term():
+    doc = {"product": {"sku": "S1", "attributes": {"regionCode": "us-east-1", "instanceType": "m5.large",
+                                                   "operatingSystem": "Linux"}},
+           "terms": {"Reserved": {"S1.R": {
+               "termAttributes": {"LeaseContractLength": "1yr", "PurchaseOption": "No Upfront"},
+               "priceDimensions": {"b": {"unit": "Hrs", "pricePerUnit": {"USD": "0.06"}, "beginRange": "0",
+                                         "description": "hourly"}}}}}}
+    rows = P._api_rows_to_catalog("AmazonEC2", P.flatten_price_list([doc]))
+    assert [r["term"] for r in rows] == [P.TERM_RI_1YR]

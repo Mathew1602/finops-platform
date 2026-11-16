@@ -155,6 +155,25 @@ def save_scenario(scn: dict) -> str:
     return str(path)
 
 
+def name_taken(name: str, current: str | None = None) -> bool:
+    """True when saving `name` would overwrite a scenario other than `current`.
+
+    Names share a file when they differ only by case or punctuation.
+    """
+    path = _path(name)
+    return path.exists() and (current is None or path != _path(current))
+
+
+def unique_name(name: str) -> str:
+    """`name`, or `name (2)`, `name (3)`... if it would overwrite another scenario."""
+    if not name_taken(name):
+        return name
+    i = 2
+    while name_taken(f"{name} ({i})"):
+        i += 1
+    return f"{name} ({i})"
+
+
 def load_scenario(name: str) -> dict:
     scn = json.loads(_path(name).read_text())
     scn.setdefault("resources", {})
@@ -226,8 +245,16 @@ def example_scenarios() -> list[dict]:
 
 
 def ensure_examples() -> None:
-    """Write the example scenarios on first run so the demo works immediately."""
-    A.SCENARIO_DIR.mkdir(parents=True, exist_ok=True)
-    if not any(A.SCENARIO_DIR.glob("*.json")):
-        for scn in example_scenarios():
-            save_scenario(scn)
+    """Write the example scenarios on first run so the demo works immediately.
+
+    Only when the scenario folder does not exist yet, so deleting every
+    scenario does not bring the examples back.
+    """
+    if not A.SCENARIO_DIR.exists():
+        restore_examples()
+
+
+def restore_examples() -> None:
+    """(Re)write the three example scenarios, overwriting any with the same names."""
+    for scn in example_scenarios():
+        save_scenario(scn)
