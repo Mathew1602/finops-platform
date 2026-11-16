@@ -1,0 +1,37 @@
+{
+  "name": "Development small",
+  "description": "Dev environment running office hours only (about 220 h/month).",
+  "region": "us-east-1",
+  "created": "2026-11-16T11:02:56",
+  "updated": "2026-11-16T11:02:56",
+  "resources": {
+    "ec2": [
+      {
+        "name": "dev-box",
+        "department": "Development",
+        "instance_type": "t3.medium",
+        "os": "Linux",
+        "count": 5,
+        "hours_per_month": 220,
+        "ebs_type": "gp3",
+        "ebs_gb": 40
+      }
+    ],
+    "s3": [
+      {
+        "name": "build-artifacts",
+        "department": "Development",
+        "storage_class": "STANDARD",
+        "storage_gb": 250.0,
+        "put_requests_k": 10.0,
+        "get_requests_k": 100.0,
+        "retrieval_gb": 0.0
+      }
+    ],
+    "rds": [],
+    "dynamodb": [],
+    "lambda": [],
+    "elb": [],
+    "backup": []
+  }
+}

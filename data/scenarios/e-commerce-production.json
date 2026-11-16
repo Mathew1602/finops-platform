@@ -1,0 +1,83 @@
+{
+  "name": "E-commerce production",
+  "description": "Online shopping platform: EC2 web tier behind an ALB, Multi-AZ RDS, S3 media.",
+  "region": "us-east-1",
+  "created": "2026-11-16T11:02:56",
+  "updated": "2026-11-16T11:02:56",
+  "resources": {
+    "ec2": [
+      {
+        "name": "web-tier",
+        "department": "E-commerce",
+        "instance_type": "m5.large",
+        "os": "Linux",
+        "count": 4,
+        "hours_per_month": 730,
+        "ebs_type": "gp3",
+        "ebs_gb": 50
+      },
+      {
+        "name": "worker",
+        "department": "E-commerce",
+        "instance_type": "c5.large",
+        "os": "Linux",
+        "count": 2,
+        "hours_per_month": 730,
+        "ebs_type": "gp3",
+        "ebs_gb": 50
+      }
+    ],
+    "s3": [
+      {
+        "name": "product-media",
+        "department": "E-commerce",
+        "storage_class": "STANDARD",
+        "storage_gb": 800.0,
+        "put_requests_k": 200.0,
+        "get_requests_k": 5000.0,
+        "retrieval_gb": 0.0
+      },
+      {
+        "name": "order-archive",
+        "department": "E-commerce",
+        "storage_class": "STANDARD_IA",
+        "storage_gb": 1500.0,
+        "put_requests_k": 10.0,
+        "get_requests_k": 100.0,
+        "retrieval_gb": 50.0
+      }
+    ],
+    "rds": [
+      {
+        "name": "orders-db",
+        "department": "E-commerce",
+        "instance_class": "db.m5.large",
+        "engine": "MySQL",
+        "multi_az": true,
+        "count": 1,
+        "hours_per_month": 730,
+        "storage_gb": 200
+      }
+    ],
+    "dynamodb": [],
+    "lambda": [],
+    "elb": [
+      {
+        "name": "shop-alb",
+        "department": "E-commerce",
+        "lb_type": "application",
+        "count": 1,
+        "hours_per_month": 730,
+        "avg_lcu": 4.0
+      }
+    ],
+    "backup": [
+      {
+        "name": "rds-backups",
+        "department": "E-commerce",
+        "resource_type": "RDS",
+        "storage_gb": 600.0
+      }
+    ]
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "name": "Brief example",
+  "description": "Example configuration from the project brief (Module 3 table). Storage 100 GB is interpreted as EBS per EC2 instance.",
+  "region": "us-east-1",
+  "created": "2026-11-16T11:02:56",
+  "updated": "2026-11-16T11:02:56",
+  "resources": {
+    "ec2": [
+      {
+        "name": "app-server",
+        "department": "Development",
+        "instance_type": "t3.small",
+        "os": "Linux",
+        "count": 3,
+        "hours_per_month": 730,
+        "ebs_type": "gp3",
+        "ebs_gb": 100
+      }
+    ],
+    "s3": [
+      {
+        "name": "app-files",
+        "department": "Development",
+        "storage_class": "STANDARD",
+        "storage_gb": 500.0,
+        "put_requests_k": 10.0,
+        "get_requests_k": 100.0,
+        "retrieval_gb": 0.0
+      }
+    ],
+    "rds": [
+      {
+        "name": "app-db",
+        "department": "E-commerce",
+        "instance_class": "db.t3.medium",
+        "engine": "MySQL",
+        "multi_az": false,
+        "count": 1,
+        "hours_per_month": 730,
+        "storage_gb": 20
+      }
+    ],
+    "dynamodb": [
+      {
+        "name": "orders",
+        "department": "Customer Services",
+        "read_requests_m": 1.0,
+        "write_requests_m": 0.0,
+        "storage_gb": 5.0
+      }
+    ],
+    "lambda": [
+      {
+        "name": "api-handler",
+        "department": "Customer Services",
+        "invocations_m": 2.0,
+        "memory_mb": 512,
+        "avg_duration_ms": 200
+      }
+    ],
+    "elb": [],
+    "backup": []
+  }
+}
